@@ -56,11 +56,11 @@ body {
 }
 
 .sp-logo {
-  width: 30px;
-  height: 30px;
-  border-radius: 7px;
-  border: 1px solid rgba(0, 240, 255, 0.4);
-  box-shadow: 0 0 8px rgba(0, 240, 255, 0.25);
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  border: 1.5px solid #00f0ff;
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.55);
 }
 
 .sp-title-row {
@@ -226,9 +226,9 @@ body {
   z-index: 1;
 }
 
-/* Dark tactical map tile filter */
+/* Crisp ESRI Satellite Hybrid rendering */
 .leaflet-tile-pane {
-  filter: brightness(0.84) contrast(1.12) saturate(0.88);
+  filter: none;
 }
 
 .sp-map-status {

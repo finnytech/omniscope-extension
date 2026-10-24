@@ -46,6 +46,8 @@
     "https://api.weather.gov/*",
     "https://services.swpc.noaa.gov/*",
     "https://api.wheretheiss.at/*",
+    "https://server.arcgisonline.com/*",
+    "https://services.arcgisonline.com/*",
     "https://omniscope-web.pages.dev/*",
     "https://omniscope-web.vercel.app/*"
   ],

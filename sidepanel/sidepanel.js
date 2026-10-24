@@ -150,10 +150,15 @@ function initMap() {
     attributionControl: false
   });
 
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    maxZoom: 18,
-    subdomains: 'abcd'
-  }).addTo(state.map);
+  // ESRI Satellite Hybrid (Ultra High-Res Satellite + Boundaries & City Labels — 100% Free & Keyless)
+  L.layerGroup([
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 19
+    }),
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 19
+    })
+  ]).addTo(state.map);
 
   state.quakeLayerGroup = L.layerGroup().addTo(state.map);
   state.blitzLayerGroup = L.layerGroup().addTo(state.map);
@@ -289,27 +294,37 @@ function toggleRadarPlayback() {
 }
 
 // ---------------------------------------------------------------------------
-// SECTOR BOUNDING-BOX STATION SCANNER (DRAG-DISABLED IMMEDIATELY ON CLICK)
+// SECTOR BOUNDING-BOX STATION SCANNER (CAPTURE-PHASE DOM + TOGGLE-OFF CLEAR)
 // ---------------------------------------------------------------------------
 let boxScanCleanup = null;
 
-function startBoxScanMode() {
+function startBoxScanMode(forceNew = false) {
   if (!state.map) return;
 
-  // Toggle off if already active
-  if (state.boxScanActive) {
-    cancelBoxScanMode();
+  const hasVisibleBox = state.boxScanGroup && state.boxScanGroup.getLayers().length > 0;
+
+  // Toggle OFF and clear map if already active or if a scanned box is on the map (unless forceNew)
+  if (!forceNew && (state.boxScanActive || hasVisibleBox)) {
+    cancelBoxScanMode(true);
     return;
   }
 
+  if (boxScanCleanup) {
+    boxScanCleanup();
+    boxScanCleanup = null;
+  }
+
   state.boxScanActive = true;
-  // CRITICAL FIX: Disable Leaflet map dragging immediately when Box-Scan is activated
-  // so mouse dragging draws the selection rectangle instead of panning the map!
   state.map.dragging.disable();
+  if (state.map.doubleClickZoom) state.map.doubleClickZoom.disable();
+  if (state.map.scrollWheelZoom) state.map.scrollWheelZoom.disable();
 
   const btn = document.getElementById('btn-box-scan');
   const hint = document.getElementById('sp-boxscan-hint');
-  if (btn) btn.classList.add('active');
+  if (btn) {
+    btn.classList.add('active');
+    btn.textContent = '📐 Drawing...';
+  }
   if (hint) hint.classList.remove('hidden');
 
   const container = state.map.getContainer();
@@ -318,44 +333,58 @@ function startBoxScanMode() {
   let startLatLng = null;
   let tempRect = null;
 
-  const onMouseDown = (e) => {
-    startLatLng = e.latlng;
-    if (tempRect) {
-      state.boxScanGroup.removeLayer(tempRect);
-    }
+  const onMouseDown = (domEv) => {
+    if (domEv.button !== 0) return;
+    if (domEv.target && domEv.target.closest && domEv.target.closest('.leaflet-control, .leaflet-popup')) return;
+    domEv.stopPropagation();
+    domEv.preventDefault();
+    state.map.dragging.disable();
+
+    startLatLng = state.map.mouseEventToLatLng(domEv);
+    state.boxScanGroup.clearLayers();
     tempRect = L.rectangle([startLatLng, startLatLng], {
       color: '#10b981',
-      weight: 2,
+      weight: 2.5,
       dashArray: '5, 4',
       fillColor: '#10b981',
-      fillOpacity: 0.18
+      fillOpacity: 0.2,
+      interactive: false
     }).addTo(state.boxScanGroup);
   };
 
-  const onMouseMove = (e) => {
-    if (!startLatLng || !tempRect) return;
-    tempRect.setBounds(L.latLngBounds(startLatLng, e.latlng));
+  const onMouseMove = (domEv) => {
+    if (!startLatLng || !tempRect || !state.map) return;
+    const curLatLng = state.map.mouseEventToLatLng(domEv);
+    tempRect.setBounds(L.latLngBounds(startLatLng, curLatLng));
   };
 
-  const onMouseUp = async (e) => {
-    if (!startLatLng) return;
-    const bounds = L.latLngBounds(startLatLng, e.latlng);
-    cancelBoxScanMode();
+  const onMouseUp = async (domEv) => {
+    if (!startLatLng || !state.map) return;
+    const endLatLng = state.map.mouseEventToLatLng(domEv);
+    let bounds = L.latLngBounds(startLatLng, endLatLng);
+    const dlat = Math.abs(bounds.getNorth() - bounds.getSouth());
+    const dlon = Math.abs(bounds.getEast() - bounds.getWest());
+    if (dlat < 0.005 && dlon < 0.005) {
+      const r = 0.35;
+      bounds = L.latLngBounds([endLatLng.lat - r, endLatLng.lng - r * 1.3], [endLatLng.lat + r, endLatLng.lng + r * 1.3]);
+    }
+    startLatLng = null;
+    cancelBoxScanMode(false);
     await executeSectorBoxScan(bounds);
   };
 
-  state.map.on('mousedown', onMouseDown);
-  state.map.on('mousemove', onMouseMove);
-  state.map.on('mouseup', onMouseUp);
+  container.addEventListener('mousedown', onMouseDown, true);
+  window.addEventListener('mousemove', onMouseMove);
+  window.addEventListener('mouseup', onMouseUp);
 
   boxScanCleanup = () => {
-    state.map.off('mousedown', onMouseDown);
-    state.map.off('mousemove', onMouseMove);
-    state.map.off('mouseup', onMouseUp);
+    container.removeEventListener('mousedown', onMouseDown, true);
+    window.removeEventListener('mousemove', onMouseMove);
+    window.removeEventListener('mouseup', onMouseUp);
   };
 }
 
-function cancelBoxScanMode() {
+function cancelBoxScanMode(clearMapLayers = true) {
   state.boxScanActive = false;
   if (boxScanCleanup) {
     boxScanCleanup();
@@ -363,12 +392,26 @@ function cancelBoxScanMode() {
   }
   if (state.map) {
     state.map.dragging.enable();
+    if (state.map.doubleClickZoom) state.map.doubleClickZoom.enable();
+    if (state.map.scrollWheelZoom) state.map.scrollWheelZoom.enable();
     state.map.getContainer().style.cursor = '';
   }
   const btn = document.getElementById('btn-box-scan');
   const hint = document.getElementById('sp-boxscan-hint');
-  if (btn) btn.classList.remove('active');
   if (hint) hint.classList.add('hidden');
+
+  if (clearMapLayers) {
+    if (state.boxScanGroup) {
+      state.boxScanGroup.clearLayers();
+    }
+    if (btn) {
+      btn.classList.remove('active');
+      btn.textContent = '📐 Box-Scan';
+    }
+  } else if (btn) {
+    btn.classList.add('active');
+    btn.textContent = '✕ Clear Scan';
+  }
 }
 
 async function executeSectorBoxScan(bounds) {
@@ -1132,9 +1175,9 @@ function bindUIEvents() {
   const boxBtn1 = document.getElementById('btn-box-scan');
   const boxBtn2 = document.getElementById('btn-trigger-boxscan-2');
   const cancelBoxBtn = document.getElementById('btn-cancel-boxscan');
-  if (boxBtn1) boxBtn1.addEventListener('click', () => startBoxScanMode());
-  if (boxBtn2) boxBtn2.addEventListener('click', () => startBoxScanMode());
-  if (cancelBoxBtn) cancelBoxBtn.addEventListener('click', () => cancelBoxScanMode());
+  if (boxBtn1) boxBtn1.addEventListener('click', () => startBoxScanMode(false));
+  if (boxBtn2) boxBtn2.addEventListener('click', () => startBoxScanMode(true));
+  if (cancelBoxBtn) cancelBoxBtn.addEventListener('click', () => cancelBoxScanMode(true));
 
   // Radar Controls
   const playBtn = document.getElementById('btn-radar-play');
