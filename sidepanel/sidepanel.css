@@ -98,6 +98,27 @@ body {
   gap: 5px;
 }
 
+.sp-lang-select {
+  background: var(--bg-card-alt);
+  color: var(--cyan);
+  border: 1px solid rgba(0, 240, 255, 0.35);
+  border-radius: 5px;
+  padding: 2px 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  max-width: 82px;
+  height: 26px;
+  cursor: pointer;
+  outline: none;
+}
+
+.sp-lang-select:hover,
+.sp-lang-select:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.35);
+}
+
 .sp-clock {
   font-family: var(--font-mono);
   font-size: 10px;

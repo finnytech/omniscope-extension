@@ -48,6 +48,7 @@
     "https://api.wheretheiss.at/*",
     "https://server.arcgisonline.com/*",
     "https://services.arcgisonline.com/*",
+    "https://translate.googleapis.com/*",
     "https://omniscope-web.pages.dev/*",
     "https://omniscope-web.vercel.app/*"
   ],
