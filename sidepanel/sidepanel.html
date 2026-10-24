@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OmniScope OSINT — Side Panel HUD</title>
+  <link rel="stylesheet" href="../vendor/leaflet.css">
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <!-- TOP BRAND HEADER -->
+  <header class="sp-header">
+    <div class="sp-brand">
+      <img src="../icons/icon-48.png" alt="OmniScope OSINT Logo" class="sp-logo">
+      <div class="sp-brand-text">
+        <div class="sp-title-row">
+          <span class="sp-title">OMNISCOPE</span>
+          <span class="sp-badge">v2.6.0</span>
+        </div>
+        <div class="sp-subtitle">GLOBAL WEATHER, RADAR &amp; SENSOR HUD</div>
+      </div>
+    </div>
+    <div class="sp-header-actions">
+      <span id="sp-utc-clock" class="sp-clock">00:00:00 UTC</span>
+      <button id="btn-refresh-all" class="sp-icon-btn" title="Refresh All Live Telemetry">⟳</button>
+      <button id="btn-open-webapp" class="sp-icon-btn sp-icon-btn-accent" title="Open Full-Screen OmniScope Web HUD">⛶</button>
+    </div>
+  </header>
+
+  <!-- LOCATION SEARCH & QUICK HOTSPOTS -->
+  <section class="sp-search-bar">
+    <div class="sp-search-input-wrap">
+      <input type="text" id="sp-search-input" placeholder="Search city or lat, lon (e.g. Berlin or 35.33, -97.48)..." autocomplete="off">
+      <button id="btn-search-go" class="sp-btn-primary">LOCATE</button>
+    </div>
+    <div class="sp-hotspots">
+      <button class="sp-chip" data-lat="50.1109" data-lon="8.6821" data-name="Frankfurt, DE">🇩🇪 Frankfurt</button>
+      <button class="sp-chip" data-lat="35.3395" data-lon="-97.4867" data-name="Moore, OK (Tornado Alley)">🌪️ Moore OK</button>
+      <button class="sp-chip" data-lat="35.6762" data-lon="139.6503" data-name="Tokyo, JP">🇯🇵 Tokyo</button>
+      <button class="sp-chip" data-lat="64.1466" data-lon="-21.9426" data-name="Reykjavik, IS">🌋 Reykjavik</button>
+      <button class="sp-chip" data-lat="25.7617" data-lon="-80.1918" data-name="Miami, FL">🌀 Miami</button>
+    </div>
+  </section>
+
+  <!-- INTERACTIVE LEAFLET RADAR & SENSOR MAP -->
+  <section class="sp-map-section">
+    <div id="sp-map" class="sp-map-container"></div>
+
+    <!-- Map Floating Status Pill -->
+    <div id="sp-map-status" class="sp-map-status">
+      <span class="sp-dot-live"></span>
+      <span id="sp-active-coords">50.11°N, 8.68°E · Frankfurt, DE</span>
+    </div>
+
+    <!-- Box-Scan Active Banner -->
+    <div id="sp-boxscan-hint" class="sp-boxscan-hint hidden">
+      <span>📐 Drag mouse across map to scan weather stations in box</span>
+      <button id="btn-cancel-boxscan" class="sp-btn-xs">✕ Cancel</button>
+    </div>
+
+    <!-- Map Layer & Radar Controls Bar -->
+    <div class="sp-map-toolbar">
+      <div class="sp-layer-toggles">
+        <button id="toggle-radar" class="sp-layer-btn active" title="Toggle RainViewer Live Doppler Radar">🌧️ Radar</button>
+        <button id="toggle-quakes" class="sp-layer-btn active" title="Toggle USGS M2.5+ Earthquakes">🌍 Quakes</button>
+        <button id="toggle-blitz" class="sp-layer-btn active" title="Toggle VLF Lightning Vectors">⚡ Blitz</button>
+        <button id="toggle-cams" class="sp-layer-btn active" title="Toggle Verified Live Webcams">📷 Cams</button>
+        <button id="btn-box-scan" class="sp-layer-btn sp-layer-btn-emerald" title="Draw Bounding Box on Map to Scan Virtual Station Grid">📐 Box-Scan</button>
+      </div>
+      <div class="sp-radar-controls">
+        <button id="btn-radar-play" class="sp-radar-play-btn" title="Play/Pause Doppler Radar Loop">▶</button>
+        <input type="range" id="sp-radar-slider" min="0" max="10" value="10" class="sp-radar-slider">
+        <span id="sp-radar-time" class="sp-radar-time">LIVE</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- TACTICAL NAVIGATION TABS -->
+  <nav class="sp-tabs">
+    <button class="sp-tab active" data-tab="tab-weather">🌦️ WEATHER</button>
+    <button class="sp-tab" data-tab="tab-alerts">⚠️ ALERTS <span id="sp-alert-badge" class="sp-tab-count">0</span></button>
+    <button class="sp-tab" data-tab="tab-space">🧲 SPACE/MAG</button>
+    <button class="sp-tab" data-tab="tab-archive">🏛️ ARCHIVE</button>
+    <button class="sp-tab" data-tab="tab-cams">📷 CAMS</button>
+  </nav>
+
+  <!-- TAB CONTENT PANELS -->
+  <main class="sp-content">
+    <!-- TAB 1: WEATHER & MULTI-MODEL CONSENSUS + BOX SCAN -->
+    <div id="tab-weather" class="sp-panel active">
+      <!-- Primary Weather Telemetry Grid -->
+      <div class="sp-card">
+        <div class="sp-card-header">
+          <span class="sp-card-title">📡 LIVE ATMOSPHERIC TELEMETRY</span>
+          <span id="wx-updated" class="sp-card-meta">Open-Meteo DWD/NOAA</span>
+        </div>
+        <div class="sp-wx-hero">
+          <div class="sp-wx-temp-block">
+            <span id="wx-temp" class="sp-wx-temp">--.-°C</span>
+            <span id="wx-desc" class="sp-wx-desc">Acquiring telemetry...</span>
+          </div>
+          <div class="sp-wx-air-pill" id="wx-aqi-pill">
+            <span>AQI / PM2.5</span>
+            <strong id="wx-pm25">-- µg/m³</strong>
+          </div>
+        </div>
+        <div class="sp-metrics-grid">
+          <div class="sp-metric">
+            <span class="sp-metric-label">💨 WIND / GUSTS</span>
+            <strong id="wx-wind" class="sp-metric-val">-- / -- km/h</strong>
+          </div>
+          <div class="sp-metric">
+            <span class="sp-metric-label">💧 HUMIDITY</span>
+            <strong id="wx-humidity" class="sp-metric-val">--%</strong>
+          </div>
+          <div class="sp-metric">
+            <span class="sp-metric-label">🧭 PRESSURE (MSL)</span>
+            <strong id="wx-pressure" class="sp-metric-val">---- hPa</strong>
+          </div>
+          <div class="sp-metric">
+            <span class="sp-metric-label">⚡ CAPE / CONVECTIVE</span>
+            <strong id="wx-cape" class="sp-metric-val">-- J/kg</strong>
+          </div>
+          <div class="sp-metric">
+            <span class="sp-metric-label">🌧️ PRECIPITATION</span>
+            <strong id="wx-precip" class="sp-metric-val">0.0 mm</strong>
+          </div>
+          <div class="sp-metric">
+            <span class="sp-metric-label">☀️ UV INDEX</span>
+            <strong id="wx-uv" class="sp-metric-val">--</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4-Model Ensemble Consensus Card -->
+      <div class="sp-card">
+        <div class="sp-card-header">
+          <span class="sp-card-title">🧠 4-MODEL ENSEMBLE CONSENSUS</span>
+          <span id="wx-spread-badge" class="sp-badge-ok">Spread: --°C</span>
+        </div>
+        <div class="sp-model-table-wrap">
+          <table class="sp-table" id="wx-model-table">
+            <thead>
+              <tr>
+                <th>Model</th>
+                <th>Temp</th>
+                <th>Wind</th>
+                <th>Gust</th>
+                <th>CAPE</th>
+              </tr>
+            </thead>
+            <tbody id="wx-model-tbody">
+              <tr><td colspan="5" class="sp-muted">Loading DWD ICON, NOAA GFS, ECMWF IFS, MeteoFrance AROME...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Sector Box-Scan Results Card -->
+      <div class="sp-card" id="sp-boxscan-card">
+        <div class="sp-card-header">
+          <span class="sp-card-title">📐 SECTOR BOX-SCAN STATIONS</span>
+          <button id="btn-trigger-boxscan-2" class="sp-btn-xs sp-btn-emerald">New Box Scan</button>
+        </div>
+        <div id="sp-boxscan-results" class="sp-boxscan-results">
+          <p class="sp-muted">Click <strong>📐 Box-Scan</strong> above and drag a rectangle on the map to sample multi-point station telemetry inside any bounding box.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: SEVERE ALERTS & USGS EARTHQUAKES -->
+    <div id="tab-alerts" class="sp-panel">
+      <div class="sp-card">
+        <div class="sp-card-header">
+          <span class="sp-card-title">🌪️ NOAA NWS SEVERE &amp; TORNADO ALERTS</span>
+          <span id="noaa-alerts-count" class="sp-badge-warn">0 Active</span>
+        </div>
+        <div id="sp-noaa-alerts-list" class="sp-feed-list">
+          <p class="sp-muted">Querying api.weather.gov/alerts/active...</p>
+        </div>
+      </div>
+
+      <div class="sp-card">
+        <div class="sp-card-header">
+          <span class="sp-card-title">🌍 USGS LIVE EARTHQUAKES (M2.5+ / 24H)</span>
+          <span id="usgs-quakes-count" class="sp-card-meta">0 Events</span>
+        </div>
+        <div id="sp-usgs-quakes-list" class="sp-feed-list">
+          <p class="sp-muted">Querying earthquake.usgs.gov...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: SPACE WEATHER, 3-AXIS MAGNETOMETER & VLF LIGHTNING -->
+    <div id="tab-space" class="sp-panel">
+      <!-- Real-World Weather Companion inside Magnetometer Panel -->
+      <div class="sp-card sp-card-highlight">
+        <div class="sp-card-header">
+          <span class="sp-card-title">🌦️ LOCAL ATMOSPHERIC + GEOMAGNETIC SYNC</span>
+          <span id="mag-wx-sync-loc" class="sp-card-meta">Frankfurt, DE</span>
+        </div>
+        <div class="sp-mag-wx-strip">
+          <div><span>Temp:</span> <strong id="mag-wx-temp">--°C</strong></div>
+          <div><span>Pressure:</span> <strong id="mag-wx-press">---- hPa</strong></div>
+          <div><span>Wind:</span> <strong id="mag-wx-wind">-- km/h</strong></div>
+          <div><span>CAPE:</span> <strong id="mag-wx-cape">-- J/kg</strong></div>
+        </div>
+      </div>
+
+      <!-- 3-Axis Fluxgate Magnetometer Oscilloscope -->
+      <div class="sp-card">
+        <div class="sp-card-header">
+          <span class="sp-card-title">🧲 3-AXIS FLUXGATE MAGNETOMETER (nT)</span>
+          <span id="kp-index-badge" class="sp-badge-ok">Kp: --</span>
+        </div>
+        <canvas id="sp-geomag-canvas" width="340" height="120" class="sp-oscilloscope"></canvas>
+        <div class="sp-mag-axes">
+          <div class="sp-axis-item sp-axis-bx"><span>Bx (North)</span><strong id="mag-bx">---- nT</strong></div>
+          <div class="sp-axis-item sp-axis-by"><span>By (East)</span><strong id="mag-by">---- nT</strong></div>
+          <div class="sp-axis-item sp-axis-bz"><span>Bz (IMFs)</span><strong id="mag-bz">---- nT</strong></div>
+          <div class="sp-axis-item sp-axis-bt"><span>|B| Total</span><strong id="mag-bt">---- nT</strong></div>
+        </div>
+      </div>
+
+      <!-- Blitzortung VLF Sferics Waveform -->
+      <div class="sp-card">
+        <div class="sp-card-header">
+          <span class="sp-card-title">⚡ BLITZORTUNG VLF SFERICS (3–30 kHz)</span>
+          <span id="blitz-rate-badge" class="sp-card-meta">-- strikes/min</span>
+        </div>
+        <canvas id="sp-blitz-canvas" width="340" height="90" class="sp-oscilloscope"></canvas>
+        <div class="sp-mag-wx-strip">
+          <div><span>Nearest Strike:</span> <strong id="blitz-nearest">-- km</strong></div>
+          <div><span>Peak Azimuth:</span> <strong id="blitz-azimuth">---°</strong></div>
+          <div><span>ISS Orbit:</span> <strong id="iss-coords">--°, --°</strong></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: HISTORICAL WEATHER & TORNADO ARCHIVE (1940-PRESENT) -->
+    <div id="tab-archive" class="sp-panel">
+      <div class="sp-card">
+        <div class="sp-card-header">
+          <span class="sp-card-title">🏛️ ERA5 HISTORICAL WEATHER &amp; TORNADO ARCHIVE</span>
+          <span class="sp-card-meta">1940 – Present</span>
+        </div>
+        <p class="sp-small-note">Select a historic tornado outbreak preset or enter any date since 1940 to inspect real ECMWF ERA5 reanalysis telemetry:</p>
+        <div class="sp-preset-grid">
+          <button class="sp-preset-btn" data-lat="35.3395" data-lon="-97.4867" data-date="2013-05-20" data-label="Moore OK EF5 Tornado (May 20, 2013)">🌪️ 2013 Moore EF5</button>
+          <button class="sp-preset-btn" data-lat="35.5500" data-lon="-97.9500" data-date="2013-05-31" data-label="El Reno OK 4.2km EF3+ (May 31, 2013)">🌪️ 2013 El Reno</button>
+          <button class="sp-preset-btn" data-lat="37.0842" data-lon="-94.5133" data-date="2011-05-22" data-label="Joplin MO EF5 Outbreak (May 22, 2011)">🌪️ 2011 Joplin EF5</button>
+          <button class="sp-preset-btn" data-lat="33.2098" data-lon="-87.5692" data-date="2011-04-27" data-label="2011 Super Outbreak Tuscaloosa (Apr 27, 2011)">⚡ 2011 Super Outbreak</button>
+          <button class="sp-preset-btn" data-lat="50.3744" data-lon="7.2108" data-date="2021-07-14" data-label="Ahrtal Extreme Flood Germany (Jul 14, 2021)">🌊 2021 Ahrtal Flood</button>
+          <button class="sp-preset-btn" data-lat="53.5511" data-lon="9.9937" data-date="1962-02-16" data-label="North Sea Storm Surge Hamburg (Feb 16, 1962)">🌊 1962 Storm Surge</button>
+        </div>
+        <div class="sp-archive-controls">
+          <input type="date" id="sp-archive-date" value="2013-05-20" min="1940-01-01" class="sp-date-input">
+          <button id="btn-run-archive" class="sp-btn-primary">QUERY ERA5</button>
+        </div>
+        <div id="sp-archive-results" class="sp-archive-results">
+          <p class="sp-muted">Select an event preset or click <strong>QUERY ERA5</strong> to load historical hourly gusts, pressure drop, and precipitation.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: VERIFIED LIVE WEBCAMS -->
+    <div id="tab-cams" class="sp-panel">
+      <div class="sp-card">
+        <div class="sp-card-header">
+          <span class="sp-card-title">📷 PROXIMITY LIVE WEBCAMS (ZERO-FAKE)</span>
+          <span id="sp-cams-count" class="sp-card-meta">56 Verified</span>
+        </div>
+        <div id="sp-cams-list" class="sp-cams-grid">
+          <p class="sp-muted">Sorting verified live cameras by proximity to map center...</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="sp-footer">
+    <span>OmniScope OSINT v2.6.0 · Zero-Fake Keyless Architecture</span>
+    <a href="https://omniscope-web.pages.dev" target="_blank" rel="noopener noreferrer" class="sp-footer-link">Web HUD ↗</a>
+  </footer>
+
+  <script src="../vendor/leaflet.js"></script>
+  <script src="sidepanel.js"></script>
+</body>
+</html>

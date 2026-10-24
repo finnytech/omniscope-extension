@@ -1,0 +1,7 @@
+# Build helper scripts
+generate_assets.py
+build_all_logos_and_packages.py
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
