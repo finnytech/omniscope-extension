@@ -1458,23 +1458,39 @@ function setSpActiveSlot(slotIdx) {
 function cleanupSpSlot(slotIdx) {
   const s = spMvState.slots[slotIdx];
   if (!s) return;
+  s.loadToken = (s.loadToken || 0) + 1;
   if (s.hls) {
-    try { s.hls.destroy(); } catch (_) {}
+    try {
+      s.hls.stopLoad();
+      s.hls.detachMedia();
+      s.hls.destroy();
+    } catch (_) {}
     s.hls = null;
   }
-  s.videoEl = null;
+  if (s.videoEl) {
+    try {
+      s.videoEl.pause();
+      s.videoEl.removeAttribute('src');
+      s.videoEl.load();
+    } catch (_) {}
+    s.videoEl = null;
+  }
 }
 
 function assignSpTvToSlot(slotIdx, ch) {
+  if (!ch) return;
   cleanupSpSlot(slotIdx);
   const s = spMvState.slots[slotIdx];
+  const token = s.loadToken;
   const titleEl = document.getElementById(`sp-mv-title-${slotIdx}`);
   const bodyEl = document.getElementById(`sp-mv-body-${slotIdx}`);
   if (titleEl) titleEl.textContent = `S${slotIdx + 1}: ${ch.flag || '📺'} ${ch.name}`;
   if (!bodyEl) return;
 
-  bodyEl.innerHTML = `<video id="sp-video-${slotIdx}" class="sp-mv-video" playsinline autoplay ${s.muted ? 'muted' : ''}></video>`;
-  const video = document.getElementById(`sp-video-${slotIdx}`);
+  const vidId = `sp-video-${slotIdx}-${token}`;
+  bodyEl.innerHTML = `<video id="${vidId}" class="sp-mv-video" playsinline autoplay ${s.muted ? 'muted' : ''}></video>`;
+  const video = document.getElementById(vidId);
+  if (!video) return;
   s.videoEl = video;
   video.volume = s.vol;
   video.muted = s.muted;
@@ -1482,9 +1498,14 @@ function assignSpTvToSlot(slotIdx, ch) {
   if (window.Hls && Hls.isSupported()) {
     const hls = new Hls({ lowLatencyMode: true });
     s.hls = hls;
-    hls.loadSource(ch.url);
     hls.attachMedia(video);
+    hls.on(Hls.Events.MEDIA_ATTACHED, () => {
+      if (spMvState.slots[slotIdx].loadToken !== token) return;
+      hls.loadSource(ch.url);
+    });
     hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      if (spMvState.slots[slotIdx].loadToken !== token) return;
+      hls.startLoad();
       video.play().catch(() => {
         video.muted = true;
         s.muted = true;
