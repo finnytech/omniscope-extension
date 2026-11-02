@@ -15,9 +15,9 @@
       <div class="sp-brand-text">
         <div class="sp-title-row">
           <span class="sp-title">OMNISCOPE</span>
-          <span class="sp-badge">v2.6.0</span>
+          <span class="sp-badge">v2.7.0</span>
         </div>
-        <div class="sp-subtitle">GLOBAL WEATHER, RADAR &amp; SENSOR HUD</div>
+        <div class="sp-subtitle">GLOBAL WEATHER, RADAR, TV &amp; SENSOR HUD</div>
       </div>
     </div>
     <div class="sp-header-actions">
@@ -59,14 +59,33 @@
       <button id="btn-cancel-boxscan" class="sp-btn-xs">✕ Cancel</button>
     </div>
 
-    <!-- Map Layer & Radar Controls Bar -->
+    <!-- Map Layer, NEXRAD L2/L3, TDWR & GOES Satellite Controls Bar -->
     <div class="sp-map-toolbar">
       <div class="sp-layer-toggles">
-        <button id="toggle-radar" class="sp-layer-btn active" title="Toggle RainViewer Live Doppler Radar">🌧️ Radar</button>
+        <button id="toggle-radar" class="sp-layer-btn active" title="Toggle Live Doppler Radar">🌧️ Radar</button>
         <button id="toggle-quakes" class="sp-layer-btn active" title="Toggle USGS M2.5+ Earthquakes">🌍 Quakes</button>
         <button id="toggle-blitz" class="sp-layer-btn active" title="Toggle VLF Lightning Vectors">⚡ Blitz</button>
         <button id="toggle-cams" class="sp-layer-btn active" title="Toggle Verified Live Webcams">📷 Cams</button>
         <button id="btn-box-scan" class="sp-layer-btn sp-layer-btn-emerald" title="Draw Bounding Box on Map to Scan Virtual Station Grid">📐 Box-Scan</button>
+      </div>
+      <!-- v2.7.0 NEXRAD Level-II/III + 45 TDWR + Near-Real-Time Satellite Selectors -->
+      <div class="sp-nexrad-sat-row">
+        <select id="sp-radar-product-select" class="sp-mini-select" title="Radar Engine: RainViewer Global, NOAA NEXRAD Level-II/III Dual-Pol & 45 TDWR Airport Radars (60s Auto-Poll)">
+          <option value="rainviewer">🌍 RainViewer Global Doppler (2h)</option>
+          <option value="nexrad-n0q">📡 NEXRAD L2 Base Reflectivity (N0B/N0Q · 60s)</option>
+          <option value="nexrad-n0u">🌪️ NEXRAD L3 Radial Velocity (N0U Mesocyclone)</option>
+          <option value="nexrad-n0c">💥 NEXRAD L3 Correlation Coeff (N0C Debris Ball)</option>
+          <option value="nexrad-n0x">🧊 NEXRAD L3 Diff Reflectivity (N0X Hail Core)</option>
+          <option value="nexrad-eet">⛈️ NEXRAD L3 Echo Tops (EET Storm Height)</option>
+          <option value="tdwr-all">✈️ NOAA TDWR 45 Airport Radars (Show Markers + TR0)</option>
+        </select>
+        <select id="sp-sat-layer-select" class="sp-mini-select" title="Keyless Auto-Updating Satellite Imagery (3-Minute Auto-Refresh)">
+          <option value="none">🛰️ Satellite: Off</option>
+          <option value="goes-geocolor">🛰️ NOAA GOES-East/West GeoColor (3m Live)</option>
+          <option value="goes-ir">🌡️ NOAA GOES Clean IR 10.3µm Clouds (3m Live)</option>
+          <option value="goes-wv">💧 NOAA GOES Water Vapor 6.2µm (3m Live)</option>
+          <option value="gibs-viirs">🌍 NASA GIBS VIIRS TrueColor Global</option>
+        </select>
       </div>
       <div class="sp-radar-controls">
         <button id="btn-radar-play" class="sp-radar-play-btn" title="Play/Pause Doppler Radar Loop">▶</button>
@@ -78,10 +97,11 @@
 
   <!-- TACTICAL NAVIGATION TABS -->
   <nav class="sp-tabs">
-    <button class="sp-tab active" data-tab="tab-weather">🌦️ WEATHER</button>
+    <button class="sp-tab active" data-tab="tab-weather">🌦️ WX</button>
+    <button class="sp-tab" data-tab="tab-tv">📺 TV / 4x <span id="sp-tv-count" class="sp-tab-count sp-tab-count-emerald">108</span></button>
     <button class="sp-tab" data-tab="tab-alerts">⚠️ ALERTS <span id="sp-alert-badge" class="sp-tab-count">0</span></button>
-    <button class="sp-tab" data-tab="tab-space">🧲 SPACE/MAG</button>
-    <button class="sp-tab" data-tab="tab-archive">🏛️ ARCHIVE</button>
+    <button class="sp-tab" data-tab="tab-space">🧲 MAG</button>
+    <button class="sp-tab" data-tab="tab-archive">🏛️ ERA5</button>
     <button class="sp-tab" data-tab="tab-cams">📷 CAMS</button>
   </nav>
 
@@ -166,6 +186,62 @@
         <div id="sp-boxscan-results" class="sp-boxscan-results">
           <p class="sp-muted">Click <strong>📐 Box-Scan</strong> above and drag a rectangle on the map to sample multi-point station telemetry inside any bounding box.</p>
         </div>
+      </div>
+    </div>
+
+    <!-- TAB TV: MON-02 1x-4x MULTI-VIEWPORT MATRIX & 108 LIVE TV BROADCAST DRAWER -->
+    <div id="tab-tv" class="sp-panel">
+      <div class="sp-card sp-card-highlight">
+        <div class="sp-card-header">
+          <span class="sp-card-title">🖥️ MON-02 MULTI-VIEWPORT (1x–4x) &amp; DVR</span>
+          <div class="sp-mv-layout-btns">
+            <button class="sp-mv-btn active" data-sp-mv="1" title="Single Full Monitor (1x)">1x</button>
+            <button class="sp-mv-btn" data-sp-mv="2" title="Dual Split Monitors (2x)">2x</button>
+            <button class="sp-mv-btn" data-sp-mv="3" title="Triple Tactical Monitors (3x)">3x</button>
+            <button class="sp-mv-btn" data-sp-mv="4" title="Quad 2x2 Matrix Monitors (4x)">4x</button>
+          </div>
+        </div>
+
+        <!-- Target Slot & Source Router Bar -->
+        <div class="sp-slot-router">
+          <div class="sp-slot-pills">
+            <button class="sp-slot-pill active" data-sp-slot="0">S1</button>
+            <button class="sp-slot-pill" data-sp-slot="1">S2</button>
+            <button class="sp-slot-pill" data-sp-slot="2">S3</button>
+            <button class="sp-slot-pill" data-sp-slot="3">S4</button>
+          </div>
+          <div class="sp-slot-assign-btns">
+            <button class="sp-btn-xs sp-btn-emerald" id="sp-btn-toggle-tv-drawer" title="Toggle 100+ Live TV Channel Drawer">📺 Channels</button>
+            <button class="sp-btn-xs" id="sp-btn-slot-cam" title="Assign Nearest Live Webcam to Active Slot">📷 Cam</button>
+            <button class="sp-btn-xs" id="sp-btn-slot-radio" title="Assign Live Radio/SDR to Active Slot">📻 Radio</button>
+            <button class="sp-btn-xs" id="sp-btn-slot-node" title="Assign Map Sector Node Telemetry to Active Slot">🗺️ Node</button>
+          </div>
+        </div>
+
+        <!-- 1x to 4x Sub-Monitor Viewport Grid -->
+        <div id="sp-multiview-grid" class="sp-multiview-grid" data-layout="1x"></div>
+      </div>
+
+      <!-- Collapsible 100+ Live Open-Source TV & News Broadcast Drawer -->
+      <div class="sp-card" id="sp-tv-drawer-card">
+        <div class="sp-card-header">
+          <span class="sp-card-title">📺 108 LIVE TV &amp; NEWS CHANNELS</span>
+          <span class="sp-badge-ok" id="sp-tv-poll-badge">🔄 2m Poll: <strong id="sp-tv-poll-timer">02:00</strong></span>
+        </div>
+        <div class="sp-tv-filter-bar">
+          <input type="text" id="sp-tv-search" class="sp-tv-search-input" placeholder="Search 108 live channels (WeatherNation, NASA, DW, CBS, BBC, NHK)...">
+          <button id="sp-btn-tv-poll-now" class="sp-btn-xs sp-btn-emerald" title="Probe live stream availability now">⚡ Poll</button>
+        </div>
+        <div class="sp-tv-cats" id="sp-tv-cats">
+          <button class="sp-tv-cat active" data-cat="all">ALL</button>
+          <button class="sp-tv-cat" data-cat="weather">🌦️ WX</button>
+          <button class="sp-tv-cat" data-cat="news">🚨 NEWS</button>
+          <button class="sp-tv-cat" data-cat="science">🛰️ SCI</button>
+          <button class="sp-tv-cat" data-cat="public">🏛️ PUB</button>
+          <button class="sp-tv-cat" data-cat="business">📈 FIN</button>
+          <button class="sp-tv-cat" data-cat="regional">📍 REG</button>
+        </div>
+        <div id="sp-tv-channels-list" class="sp-tv-channels-list"></div>
       </div>
     </div>
 
@@ -280,11 +356,12 @@
 
   <!-- FOOTER -->
   <footer class="sp-footer">
-    <span>OmniScope OSINT v2.6.0 · Zero-Fake Keyless Architecture</span>
+    <span>OmniScope OSINT v2.7.0 · Zero-Fake Keyless Architecture</span>
     <a href="https://omniscope-web.pages.dev" target="_blank" rel="noopener noreferrer" class="sp-footer-link">Web HUD ↗</a>
   </footer>
 
   <script src="../vendor/leaflet.js"></script>
+  <script src="../vendor/hls.min.js"></script>
   <script src="sp-i18n.js"></script>
   <script src="sidepanel.js"></script>
 </body>

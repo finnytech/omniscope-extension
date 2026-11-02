@@ -801,3 +801,294 @@ body {
 .sp-footer-link:hover {
   text-decoration: underline;
 }
+
+/* =========================================================================
+   v2.7.0 CHROME SIDE PANEL — NEXRAD L2/L3, TDWR, SATELLITE & 1x-4x LIVE TV
+   ========================================================================= */
+
+.sp-map-section {
+  height: 248px;
+}
+
+.sp-nexrad-sat-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+
+.sp-mini-select {
+  background: var(--bg-card);
+  color: var(--cyan);
+  border: 1px solid rgba(0, 240, 255, 0.35);
+  border-radius: 4px;
+  padding: 2px 4px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  width: 100%;
+  outline: none;
+  cursor: pointer;
+}
+
+.sp-tab-count-emerald {
+  background: var(--emerald);
+  color: #022c22;
+  font-weight: 800;
+}
+
+.sp-mv-layout-btns {
+  display: flex;
+  gap: 3px;
+}
+
+.sp-mv-btn {
+  background: var(--bg-card-alt);
+  color: var(--text-dim);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sp-mv-btn.active {
+  background: rgba(16, 185, 129, 0.22);
+  color: #34d399;
+  border-color: var(--emerald);
+}
+
+.sp-slot-router {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+
+.sp-slot-pills,
+.sp-slot-assign-btns {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+}
+
+.sp-slot-pill {
+  background: #060b16;
+  color: var(--text-dim);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sp-slot-pill.active {
+  background: rgba(0, 240, 255, 0.2);
+  color: var(--cyan);
+  border-color: var(--cyan);
+}
+
+.sp-multiview-grid {
+  display: grid;
+  gap: 5px;
+  width: 100%;
+}
+
+.sp-multiview-grid[data-layout="1x"] {
+  grid-template-columns: 1fr;
+}
+
+.sp-multiview-grid[data-layout="2x"] {
+  grid-template-columns: 1fr;
+}
+
+.sp-multiview-grid[data-layout="3x"],
+.sp-multiview-grid[data-layout="4x"] {
+  grid-template-columns: 1fr 1fr;
+}
+
+.sp-multiview-grid[data-layout="3x"] .sp-mv-cell:first-child {
+  grid-column: 1 / -1;
+}
+
+.sp-mv-cell {
+  background: #040811;
+  border: 1.5px solid rgba(148, 163, 184, 0.22);
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.sp-mv-cell.active-slot {
+  border-color: var(--emerald);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.35);
+}
+
+.sp-mv-cell-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3px 6px;
+  background: #091224;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
+
+.sp-mv-cell-title {
+  color: #f1f5f9;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sp-mv-body {
+  position: relative;
+  height: 118px;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.sp-mv-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sp-dvr-bar {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 5px;
+  background: #070e1c;
+  border-top: 1px solid rgba(148, 163, 184, 0.15);
+  flex-wrap: wrap;
+}
+
+.sp-dvr-btn {
+  background: #0f172a;
+  color: #e2e8f0;
+  border: 1px solid #334155;
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  cursor: pointer;
+}
+
+.sp-dvr-btn:hover {
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+
+.sp-dvr-live {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: var(--crimson);
+  color: #fca5a5;
+}
+
+.sp-dvr-vol {
+  width: 44px;
+  height: 4px;
+  accent-color: var(--emerald);
+}
+
+.sp-tv-filter-bar {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 5px;
+}
+
+.sp-tv-search-input {
+  flex: 1;
+  background: #050811;
+  color: var(--text-main);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 4px 7px;
+  font-size: 10px;
+  outline: none;
+}
+
+.sp-tv-cats {
+  display: flex;
+  gap: 3px;
+  overflow-x: auto;
+  margin-bottom: 6px;
+  padding-bottom: 2px;
+}
+
+.sp-tv-cat {
+  background: var(--bg-card-alt);
+  color: var(--text-dim);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.sp-tv-cat.active {
+  background: rgba(16, 185, 129, 0.22);
+  color: #34d399;
+  border-color: var(--emerald);
+}
+
+.sp-tv-channels-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 5px;
+  max-height: 230px;
+  overflow-y: auto;
+}
+
+.sp-tv-card {
+  background: var(--bg-card-alt);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 5px;
+  padding: 5px 6px;
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+
+.sp-tv-card:hover {
+  border-color: var(--emerald);
+  background: #13203d;
+}
+
+.sp-tv-card-top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 8.5px;
+  font-family: var(--font-mono);
+  color: #34d399;
+}
+
+.sp-tv-card-name {
+  font-weight: 700;
+  font-size: 10px;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 2px 0;
+}
+
+.sp-tv-card-sub {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  color: var(--text-dim);
+}

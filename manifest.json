@@ -1,11 +1,11 @@
 {
   "manifest_version": 3,
-  "name": "OmniScope OSINT — Live Radar, Weather & Sensor Side Panel",
+  "name": "OmniScope OSINT — Live Radar, TV, Weather & Sensor Side Panel",
   "short_name": "OmniScope",
-  "version": "2.6.0",
-  "description": "Real-time Doppler weather radar, USGS earthquakes, NOAA storm alerts, geomagnetic sensors & webcams right in your Chrome Side Panel.",
+  "version": "2.7.0",
+  "description": "Real-time NEXRAD Level-II/III & TDWR Doppler radar, GOES satellite auto-poll, 100+ live TV/news channels with DVR & 1x-4x multi-monitor in your Chrome Side Panel.",
   "author": "FinnyTech",
-  "homepage_url": "https://omniscope-web.vercel.app",
+  "homepage_url": "https://omniscope-web.pages.dev",
   "icons": {
     "16": "icons/icon-16.png",
     "32": "icons/icon-32.png",
@@ -42,6 +42,8 @@
     "https://archive-api.open-meteo.com/*",
     "https://api.rainviewer.com/*",
     "https://tilecache.rainviewer.com/*",
+    "https://mesonet.agron.iastate.edu/*",
+    "https://gibs.earthdata.nasa.gov/*",
     "https://earthquake.usgs.gov/*",
     "https://api.weather.gov/*",
     "https://services.swpc.noaa.gov/*",
@@ -50,7 +52,8 @@
     "https://services.arcgisonline.com/*",
     "https://translate.googleapis.com/*",
     "https://omniscope-web.pages.dev/*",
-    "https://omniscope-web.vercel.app/*"
+    "https://omniscope-web.vercel.app/*",
+    "https://*/*.m3u8*"
   ],
   "commands": {
     "_execute_action": {

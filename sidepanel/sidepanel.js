@@ -1238,3 +1238,489 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
+
+
+// ===========================================================================
+// OMNISCOPE v2.7.0 — CHROME SIDE PANEL MULTI-VIEWPORT (1x-4x), 108 LIVE TV
+// CHANNELS (2-MIN AUTO-POLL + DVR), NEXRAD L2/L3, 45 TDWR & GOES SATELLITE
+// ===========================================================================
+
+const SP_TDWR_STATIONS = [
+  { id: 'TATL', name: 'Atlanta Hartsfield TDWR', lat: 33.646, lon: -84.262 },
+  { id: 'TBOS', name: 'Boston Logan TDWR', lat: 42.158, lon: -70.934 },
+  { id: 'TBWI', name: 'Baltimore-Washington TDWR', lat: 39.090, lon: -76.630 },
+  { id: 'TCLT', name: 'Charlotte Douglas TDWR', lat: 35.337, lon: -80.885 },
+  { id: 'TCMH', name: 'Columbus TDWR', lat: 40.006, lon: -82.715 },
+  { id: 'TCVG', name: 'Cincinnati TDWR', lat: 38.898, lon: -84.579 },
+  { id: 'TDAL', name: 'Dallas Love Field TDWR', lat: 32.925, lon: -96.968 },
+  { id: 'TDAY', name: 'Dayton TDWR', lat: 40.022, lon: -84.123 },
+  { id: 'TDCA', name: 'Washington Reagan TDWR', lat: 38.759, lon: -76.962 },
+  { id: 'TDEN', name: 'Denver Intl TDWR', lat: 39.727, lon: -104.526 },
+  { id: 'TDFW', name: 'Dallas/Fort Worth TDWR', lat: 33.064, lon: -96.915 },
+  { id: 'TDTW', name: 'Detroit Metro TDWR', lat: 42.111, lon: -83.515 },
+  { id: 'TEWR', name: 'Newark Liberty TDWR', lat: 40.593, lon: -74.222 },
+  { id: 'TFLL', name: 'Fort Lauderdale TDWR', lat: 26.143, lon: -80.344 },
+  { id: 'THOU', name: 'Houston Hobby TDWR', lat: 29.516, lon: -95.242 },
+  { id: 'TIAD', name: 'Washington Dulles TDWR', lat: 39.084, lon: -77.529 },
+  { id: 'TIAH', name: 'Houston Bush TDWR', lat: 30.065, lon: -95.567 },
+  { id: 'TICH', name: 'Wichita Mid-Continent TDWR', lat: 37.507, lon: -97.437 },
+  { id: 'TIDS', name: 'Indianapolis TDWR', lat: 39.637, lon: -86.435 },
+  { id: 'TJFK', name: 'New York JFK TDWR', lat: 40.589, lon: -73.880 },
+  { id: 'TLAS', name: 'Las Vegas Reid TDWR', lat: 36.144, lon: -115.007 },
+  { id: 'TLVE', name: 'Cleveland Hopkins TDWR', lat: 41.289, lon: -82.007 },
+  { id: 'TMCI', name: 'Kansas City TDWR', lat: 39.499, lon: -94.742 },
+  { id: 'TMCO', name: 'Orlando Intl TDWR', lat: 28.343, lon: -81.325 },
+  { id: 'TMDW', name: 'Chicago Midway TDWR', lat: 41.651, lon: -87.730 },
+  { id: 'TMEM', name: 'Memphis Intl TDWR', lat: 34.896, lon: -89.993 },
+  { id: 'TMIA', name: 'Miami Intl TDWR', lat: 25.758, lon: -80.491 },
+  { id: 'TMKE', name: 'Milwaukee Mitchell TDWR', lat: 42.819, lon: -88.046 },
+  { id: 'TMSP', name: 'Minneapolis-St. Paul TDWR', lat: 44.871, lon: -93.517 },
+  { id: 'TMSY', name: 'New Orleans Armstrong TDWR', lat: 30.021, lon: -90.403 },
+  { id: 'TOKC', name: 'Oklahoma City Rogers TDWR', lat: 35.276, lon: -97.510 },
+  { id: 'TORD', name: 'Chicago O\'Hare TDWR', lat: 41.797, lon: -87.858 },
+  { id: 'TPBI', name: 'West Palm Beach TDWR', lat: 26.688, lon: -80.273 },
+  { id: 'TPHL', name: 'Philadelphia Intl TDWR', lat: 39.950, lon: -75.070 },
+  { id: 'TPHX', name: 'Phoenix Sky Harbor TDWR', lat: 33.420, lon: -112.163 },
+  { id: 'TPIT', name: 'Pittsburgh Intl TDWR', lat: 40.501, lon: -80.486 },
+  { id: 'TRDU', name: 'Raleigh-Durham TDWR', lat: 36.001, lon: -78.698 },
+  { id: 'TSDF', name: 'Louisville Muhammad Ali TDWR', lat: 38.046, lon: -85.610 },
+  { id: 'TSJU', name: 'San Juan Luis Muñoz TDWR', lat: 18.474, lon: -66.179 },
+  { id: 'TSLC', name: 'Salt Lake City TDWR', lat: 40.967, lon: -111.930 },
+  { id: 'TSTL', name: 'St. Louis Lambert TDWR', lat: 38.805, lon: -90.489 },
+  { id: 'TTPA', name: 'Tampa Intl TDWR', lat: 27.859, lon: -82.518 },
+  { id: 'TTUL', name: 'Tulsa Intl TDWR', lat: 36.070, lon: -95.826 },
+  { id: 'TADW', name: 'Joint Base Andrews TDWR', lat: 38.694, lon: -76.846 }
+];
+
+const spMvState = {
+  channels: [],
+  onlineChannels: [],
+  activeCategory: 'all',
+  searchQuery: '',
+  pollCountdown: 120,
+  viewportCount: 1,
+  activeSlot: 0,
+  slots: [
+    { idx: 0, type: 'tv', hls: null, videoEl: null, muted: false, vol: 0.8 },
+    { idx: 1, type: 'tv', hls: null, videoEl: null, muted: true, vol: 0.7 },
+    { idx: 2, type: 'tv', hls: null, videoEl: null, muted: true, vol: 0.7 },
+    { idx: 3, type: 'tv', hls: null, videoEl: null, muted: true, vol: 0.7 }
+  ],
+  nexradLayer: null,
+  tdwrGroup: null,
+  satLayer: null,
+  radarProduct: 'rainviewer',
+  satProduct: 'none'
+};
+
+document.addEventListener('DOMContentLoaded', async () => {
+  await initSpMultiViewAndNexrad();
+});
+
+async function initSpMultiViewAndNexrad() {
+  // Load 108 Live TV Channels catalog
+  try {
+    const res = await fetch('../data/tv_channels.json');
+    if (res.ok) {
+      const data = await res.json();
+      spMvState.channels = Array.isArray(data) ? data : (data.channels || []);
+      spMvState.onlineChannels = [...spMvState.channels];
+      setText('sp-tv-count', String(spMvState.onlineChannels.length));
+    }
+  } catch (err) {
+    console.warn('[OmniScope SidePanel] TV catalog load fallback:', err);
+  }
+
+  renderSpTvChannels();
+  renderSpViewportCells();
+  bindSpMultiViewEvents();
+  startSpTvTwoMinutePoller();
+  initSpNexradAndSatelliteTimers();
+}
+
+function renderSpTvChannels() {
+  const listEl = document.getElementById('sp-tv-channels-list');
+  if (!listEl) return;
+
+  const filtered = spMvState.onlineChannels.filter((ch) => {
+    if (spMvState.activeCategory !== 'all' && ch.category !== spMvState.activeCategory) return false;
+    if (spMvState.searchQuery) {
+      const hay = `${ch.name} ${ch.country} ${ch.lang} ${ch.category}`.toLowerCase();
+      if (!hay.includes(spMvState.searchQuery)) return false;
+    }
+    return true;
+  });
+
+  listEl.innerHTML = filtered
+    .map(
+      (ch) => `
+      <div class="sp-tv-card" data-tv-id="${escapeHtml(ch.id)}" title="Route ${escapeHtml(ch.name)} to Slot S${spMvState.activeSlot + 1}">
+        <div class="sp-tv-card-top">
+          <span>${ch.flag || '📺'} ${escapeHtml((ch.category || 'LIVE').toUpperCase())}</span>
+          <span>🟢 LIVE</span>
+        </div>
+        <div class="sp-tv-card-name">${escapeHtml(ch.name)}</div>
+        <div class="sp-tv-card-sub">${escapeHtml(ch.country)} · ${escapeHtml(ch.lang)}</div>
+      </div>
+    `
+    )
+    .join('');
+
+  listEl.querySelectorAll('.sp-tv-card').forEach((card) => {
+    card.addEventListener('click', () => {
+      const ch = spMvState.channels.find((c) => c.id === card.dataset.tvId);
+      if (ch) {
+        assignSpTvToSlot(spMvState.activeSlot, ch);
+      }
+    });
+  });
+}
+
+function renderSpViewportCells() {
+  const grid = document.getElementById('sp-multiview-grid');
+  if (!grid) return;
+  grid.setAttribute('data-layout', `${spMvState.viewportCount}x`);
+
+  for (let i = 0; i < 4; i++) {
+    let cell = document.getElementById(`sp-mv-cell-${i}`);
+    if (!cell) {
+      cell = document.createElement('div');
+      cell.id = `sp-mv-cell-${i}`;
+      cell.className = `sp-mv-cell ${i === spMvState.activeSlot ? 'active-slot' : ''}`;
+      cell.innerHTML = `
+        <div class="sp-mv-cell-hdr">
+          <span class="sp-mv-cell-title" id="sp-mv-title-${i}">S${i + 1} // LIVE STREAM</span>
+          <button class="sp-dvr-btn" data-sp-pip="${i}" title="Picture-in-Picture">⧉</button>
+        </div>
+        <div class="sp-mv-body" id="sp-mv-body-${i}"></div>
+        <div class="sp-dvr-bar" id="sp-mv-dvr-${i}">
+          <button class="sp-dvr-btn" data-sp-dvr="playpause" data-slot="${i}">⏯</button>
+          <button class="sp-dvr-btn" data-sp-dvr="rw15" data-slot="${i}">-15s</button>
+          <button class="sp-dvr-btn" data-sp-dvr="ff15" data-slot="${i}">+15s</button>
+          <button class="sp-dvr-btn sp-dvr-live" data-sp-dvr="live" data-slot="${i}">LIVE</button>
+          <button class="sp-dvr-btn" data-sp-dvr="mute" data-slot="${i}" id="sp-mute-btn-${i}">${i === 0 ? '🔊' : '🔇'}</button>
+          <input type="range" class="sp-dvr-vol" data-sp-dvr="vol" data-slot="${i}" min="0" max="1" step="0.05" value="0.8">
+        </div>
+      `;
+      grid.appendChild(cell);
+
+      cell.addEventListener('mousedown', () => setSpActiveSlot(i));
+
+      cell.querySelector(`[data-sp-pip="${i}"]`)?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const v = spMvState.slots[i].videoEl;
+        if (v && v.requestPictureInPicture) v.requestPictureInPicture().catch(() => {});
+      });
+
+      cell.querySelectorAll('[data-sp-dvr]').forEach((ctrl) => {
+        const act = ctrl.getAttribute('data-sp-dvr');
+        if (act === 'vol') {
+          ctrl.addEventListener('input', (e) => {
+            const v = spMvState.slots[i].videoEl;
+            if (v) {
+              v.volume = parseFloat(e.target.value);
+              v.muted = v.volume === 0;
+            }
+          });
+        } else {
+          ctrl.addEventListener('click', (e) => {
+            e.stopPropagation();
+            handleSpDvrCommand(i, act);
+          });
+        }
+      });
+    }
+
+    if (i < spMvState.viewportCount) {
+      cell.style.display = 'flex';
+      if (!spMvState.slots[i].videoEl && spMvState.onlineChannels[i]) {
+        assignSpTvToSlot(i, spMvState.onlineChannels[i]);
+      }
+    } else {
+      cell.style.display = 'none';
+      cleanupSpSlot(i);
+    }
+  }
+}
+
+function setSpActiveSlot(slotIdx) {
+  spMvState.activeSlot = Math.max(0, Math.min(3, slotIdx));
+  document.querySelectorAll('.sp-slot-pill').forEach((p, idx) => {
+    p.classList.toggle('active', idx === spMvState.activeSlot);
+  });
+  document.querySelectorAll('.sp-mv-cell').forEach((c, idx) => {
+    c.classList.toggle('active-slot', idx === spMvState.activeSlot);
+  });
+}
+
+function cleanupSpSlot(slotIdx) {
+  const s = spMvState.slots[slotIdx];
+  if (!s) return;
+  if (s.hls) {
+    try { s.hls.destroy(); } catch (_) {}
+    s.hls = null;
+  }
+  s.videoEl = null;
+}
+
+function assignSpTvToSlot(slotIdx, ch) {
+  cleanupSpSlot(slotIdx);
+  const s = spMvState.slots[slotIdx];
+  const titleEl = document.getElementById(`sp-mv-title-${slotIdx}`);
+  const bodyEl = document.getElementById(`sp-mv-body-${slotIdx}`);
+  if (titleEl) titleEl.textContent = `S${slotIdx + 1}: ${ch.flag || '📺'} ${ch.name}`;
+  if (!bodyEl) return;
+
+  bodyEl.innerHTML = `<video id="sp-video-${slotIdx}" class="sp-mv-video" playsinline autoplay ${s.muted ? 'muted' : ''}></video>`;
+  const video = document.getElementById(`sp-video-${slotIdx}`);
+  s.videoEl = video;
+  video.volume = s.vol;
+  video.muted = s.muted;
+
+  if (window.Hls && Hls.isSupported()) {
+    const hls = new Hls({ lowLatencyMode: true });
+    s.hls = hls;
+    hls.loadSource(ch.url);
+    hls.attachMedia(video);
+    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      video.play().catch(() => {
+        video.muted = true;
+        s.muted = true;
+        video.play().catch(() => {});
+      });
+    });
+  } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    video.src = ch.url;
+    video.play().catch(() => {});
+  }
+}
+
+function handleSpDvrCommand(slotIdx, cmd) {
+  const s = spMvState.slots[slotIdx];
+  const v = s && s.videoEl;
+  if (!v) return;
+  if (cmd === 'playpause') {
+    if (v.paused) v.play().catch(() => {});
+    else v.pause();
+  } else if (cmd === 'rw15') {
+    v.currentTime = Math.max(0, v.currentTime - 15);
+  } else if (cmd === 'ff15') {
+    v.currentTime = v.currentTime + 15;
+  } else if (cmd === 'live') {
+    if (s.hls && s.hls.liveSyncPosition) v.currentTime = s.hls.liveSyncPosition;
+    else if (v.seekable && v.seekable.length > 0) v.currentTime = v.seekable.end(v.seekable.length - 1);
+    v.play().catch(() => {});
+  } else if (cmd === 'mute') {
+    v.muted = !v.muted;
+    s.muted = v.muted;
+    const btn = document.getElementById(`sp-mute-btn-${slotIdx}`);
+    if (btn) btn.textContent = v.muted ? '🔇' : '🔊';
+  }
+}
+
+function startSpTvTwoMinutePoller() {
+  setInterval(() => {
+    spMvState.pollCountdown--;
+    if (spMvState.pollCountdown <= 0) {
+      spMvState.pollCountdown = 120;
+      probeSpTvStreams();
+    }
+    const mins = String(Math.floor(spMvState.pollCountdown / 60)).padStart(2, '0');
+    const secs = String(spMvState.pollCountdown % 60).padStart(2, '0');
+    setText('sp-tv-poll-timer', `${mins}:${secs}`);
+  }, 1000);
+}
+
+async function probeSpTvStreams() {
+  if (!spMvState.channels.length) return;
+  const sample = spMvState.channels.slice(0, 8);
+  await Promise.allSettled(
+    sample.map(async (ch) => {
+      try {
+        const res = await fetch(ch.url, { method: 'GET' });
+        ch.online = res.ok || res.status === 206;
+      } catch (_) {}
+    })
+  );
+  spMvState.onlineChannels = spMvState.channels.filter((c) => c.online !== false);
+  setText('sp-tv-count', String(spMvState.onlineChannels.length));
+  renderSpTvChannels();
+}
+
+function bindSpMultiViewEvents() {
+  document.querySelectorAll('[data-sp-mv]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-sp-mv]').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      spMvState.viewportCount = parseInt(btn.dataset.spMv, 10) || 1;
+      renderSpViewportCells();
+    });
+  });
+
+  document.querySelectorAll('[data-sp-slot]').forEach((pill) => {
+    pill.addEventListener('click', () => {
+      setSpActiveSlot(parseInt(pill.dataset.spSlot, 10) || 0);
+    });
+  });
+
+  document.getElementById('sp-btn-toggle-tv-drawer')?.addEventListener('click', () => {
+    const drawer = document.getElementById('sp-tv-drawer-card');
+    if (drawer) drawer.classList.toggle('hidden');
+  });
+
+  document.getElementById('sp-btn-slot-cam')?.addEventListener('click', () => {
+    const cam = state.webcams[spMvState.activeSlot] || state.webcams[0];
+    const bodyEl = document.getElementById(`sp-mv-body-${spMvState.activeSlot}`);
+    const titleEl = document.getElementById(`sp-mv-title-${spMvState.activeSlot}`);
+    if (cam && bodyEl) {
+      cleanupSpSlot(spMvState.activeSlot);
+      if (titleEl) titleEl.textContent = `S${spMvState.activeSlot + 1}: 📷 ${cam.name || cam.title || 'Live Cam'}`;
+      bodyEl.innerHTML = `<div style="padding:8px;text-align:center;"><div style="font-weight:700;color:#38bdf8;">📷 ${escapeHtml(cam.name || 'Live Webcam')}</div><div style="font-size:9px;color:#94a3b8;margin:4px 0;">${Number(cam.lat).toFixed(2)}°, ${Number(cam.lon).toFixed(2)}°</div><button class="sp-btn-xs sp-btn-emerald" id="sp-open-slot-cam">Open Stream ↗</button></div>`;
+      bodyEl.querySelector('#sp-open-slot-cam')?.addEventListener('click', () => {
+        window.open(cam.url || 'https://omniscope-web.pages.dev', '_blank', 'noopener,noreferrer');
+      });
+    }
+  });
+
+  document.getElementById('sp-btn-slot-radio')?.addEventListener('click', () => {
+    cleanupSpSlot(spMvState.activeSlot);
+    const bodyEl = document.getElementById(`sp-mv-body-${spMvState.activeSlot}`);
+    const titleEl = document.getElementById(`sp-mv-title-${spMvState.activeSlot}`);
+    if (titleEl) titleEl.textContent = `S${spMvState.activeSlot + 1}: 📻 NOAA WX RADIO`;
+    if (bodyEl) {
+      bodyEl.innerHTML = `<div style="padding:8px;text-align:center;width:100%;"><div style="color:#fbbf24;font-weight:700;font-size:10px;">📻 162.550 MHz VHF · LIVE SDR</div><audio controls autoplay src="https://ice1.somafm.com/missioncontrol-128-mp3" style="width:95%;height:26px;margin-top:6px;"></audio></div>`;
+    }
+  });
+
+  document.getElementById('sp-btn-slot-node')?.addEventListener('click', () => {
+    cleanupSpSlot(spMvState.activeSlot);
+    const bodyEl = document.getElementById(`sp-mv-body-${spMvState.activeSlot}`);
+    const titleEl = document.getElementById(`sp-mv-title-${spMvState.activeSlot}`);
+    if (titleEl) titleEl.textContent = `S${spMvState.activeSlot + 1}: 🗺️ ${state.locationName}`;
+    if (bodyEl) {
+      bodyEl.innerHTML = `<div style="padding:6px;font-family:var(--font-mono);font-size:9.5px;width:100%;"><div>📍 <strong>${escapeHtml(state.locationName)}</strong> (${state.lat.toFixed(2)}°, ${state.lon.toFixed(2)}°)</div><div style="color:#38bdf8;margin-top:3px;">🌡️ Temp: ${state.wxSummary.temp ?? '--'}°C · 💨 Wind: ${state.wxSummary.wind} km/h</div><div style="color:#34d399;margin-top:2px;">🧭 Press: ${state.wxSummary.pressure} hPa · ⚡ CAPE: ${state.wxSummary.cape} J/kg</div></div>`;
+    }
+  });
+
+  document.getElementById('sp-tv-search')?.addEventListener('input', (e) => {
+    spMvState.searchQuery = e.target.value.trim().toLowerCase();
+    renderSpTvChannels();
+  });
+
+  document.getElementById('sp-btn-tv-poll-now')?.addEventListener('click', () => {
+    spMvState.pollCountdown = 120;
+    probeSpTvStreams();
+  });
+
+  document.querySelectorAll('#sp-tv-cats .sp-tv-cat').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#sp-tv-cats .sp-tv-cat').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      spMvState.activeCategory = btn.dataset.cat || 'all';
+      renderSpTvChannels();
+    });
+  });
+
+  // NEXRAD Level-II/III & TDWR Selector
+  document.getElementById('sp-radar-product-select')?.addEventListener('change', (e) => {
+    spMvState.radarProduct = e.target.value;
+    applySpNexradOrTdwrLayer();
+  });
+
+  // Near-Real-Time Satellite Selector
+  document.getElementById('sp-sat-layer-select')?.addEventListener('change', (e) => {
+    spMvState.satProduct = e.target.value;
+    applySpSatelliteLayer();
+  });
+}
+
+function applySpNexradOrTdwrLayer() {
+  if (!state.map) return;
+  if (spMvState.nexradLayer && state.map.hasLayer(spMvState.nexradLayer)) {
+    state.map.removeLayer(spMvState.nexradLayer);
+  }
+  if (spMvState.tdwrGroup) {
+    spMvState.tdwrGroup.clearLayers();
+  } else {
+    spMvState.tdwrGroup = L.layerGroup().addTo(state.map);
+  }
+
+  const prod = spMvState.radarProduct;
+  if (prod === 'rainviewer') {
+    showRadarFrame(state.radarCurrentIdx);
+    return;
+  }
+
+  // Hide RainViewer tiles while NEXRAD L2/L3 or TDWR is active
+  Object.values(state.radarTileLayers).forEach((l) => {
+    if (state.map.hasLayer(l)) state.map.removeLayer(l);
+  });
+
+  const ts = Math.floor(Date.now() / 60000);
+  if (prod.startsWith('nexrad-')) {
+    const code = prod.replace('nexrad-', '');
+    spMvState.nexradLayer = L.tileLayer(
+      `https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/nexrad-${code}-900913/{z}/{x}/{y}.png?_ts=${ts}`,
+      { opacity: 0.78, zIndex: 265 }
+    ).addTo(state.map);
+  } else if (prod === 'tdwr-all') {
+    spMvState.nexradLayer = L.tileLayer(
+      `https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/nexrad-n0q-900913/{z}/{x}/{y}.png?_ts=${ts}`,
+      { opacity: 0.75, zIndex: 265 }
+    ).addTo(state.map);
+
+    SP_TDWR_STATIONS.forEach((st) => {
+      const m = L.circleMarker([st.lat, st.lon], {
+        radius: 5,
+        color: '#a855f7',
+        weight: 2,
+        fillColor: '#c084fc',
+        fillOpacity: 0.85
+      }).addTo(spMvState.tdwrGroup);
+      m.bindTooltip(`📡 ${st.id} — ${st.name}`, { direction: 'top' });
+      m.on('click', () => setLocation(st.lat, st.lon, `${st.id} ${st.name}`, true));
+    });
+  }
+}
+
+function applySpSatelliteLayer() {
+  if (!state.map) return;
+  if (spMvState.satLayer && state.map.hasLayer(spMvState.satLayer)) {
+    state.map.removeLayer(spMvState.satLayer);
+    spMvState.satLayer = null;
+  }
+  const mode = spMvState.satProduct;
+  if (!mode || mode === 'none') return;
+
+  const ts = Math.floor(Date.now() / 180000);
+  let url = '';
+  if (mode === 'goes-geocolor') {
+    url = `https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/goes-east-vis-1km-900913/{z}/{x}/{y}.png?_ts=${ts}`;
+  } else if (mode === 'goes-ir') {
+    url = `https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/goes-east-ir-4km-900913/{z}/{x}/{y}.png?_ts=${ts}`;
+  } else if (mode === 'goes-wv') {
+    url = `https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/goes-east-wv-4km-900913/{z}/{x}/{y}.png?_ts=${ts}`;
+  } else if (mode === 'gibs-viirs') {
+    const d = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    url = `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_SNPP_CorrectedReflectance_TrueColor/default/${d}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg`;
+  }
+  if (url) {
+    spMvState.satLayer = L.tileLayer(url, { opacity: 0.65, zIndex: 210 }).addTo(state.map);
+  }
+}
+
+function initSpNexradAndSatelliteTimers() {
+  // 60-second rapid auto-refresh for NEXRAD Level-II/III & TDWR
+  setInterval(() => {
+    if (spMvState.radarProduct !== 'rainviewer') {
+      applySpNexradOrTdwrLayer();
+    }
+  }, 60000);
+
+  // 3-minute (180s) auto-refresh for Near-Real-Time Satellite tiles
+  setInterval(() => {
+    if (spMvState.satProduct !== 'none') {
+      applySpSatelliteLayer();
+    }
+  }, 180000);
+}
