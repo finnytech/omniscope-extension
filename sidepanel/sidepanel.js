@@ -1346,7 +1346,9 @@ function renderSpTvChannels() {
     if (spMvState.activeCategory !== 'all' && ch.category !== spMvState.activeCategory) return false;
     if (spMvState.searchQuery) {
       const hay = `${ch.name} ${ch.country} ${ch.lang} ${ch.category}`.toLowerCase();
-      if (!hay.includes(spMvState.searchQuery)) return false;
+      const hayNorm = hay.replace(/ss/g, 's');
+      const qNorm = spMvState.searchQuery.replace(/ss/g, 's');
+      if (!hay.includes(spMvState.searchQuery) && !hayNorm.includes(qNorm)) return false;
     }
     return true;
   });
@@ -1559,7 +1561,15 @@ function bindSpMultiViewEvents() {
 
   document.querySelectorAll('[data-sp-slot]').forEach((pill) => {
     pill.addEventListener('click', () => {
-      setSpActiveSlot(parseInt(pill.dataset.spSlot, 10) || 0);
+      const sIdx = parseInt(pill.dataset.spSlot, 10) || 0;
+      if (sIdx >= spMvState.viewportCount) {
+        spMvState.viewportCount = sIdx === 1 ? 2 : sIdx === 2 ? 3 : 4;
+        document.querySelectorAll('[data-sp-mv]').forEach((b) => {
+          b.classList.toggle('active', parseInt(b.dataset.spMv, 10) === spMvState.viewportCount);
+        });
+        renderSpViewportCells();
+      }
+      setSpActiveSlot(sIdx);
     });
   });
 
